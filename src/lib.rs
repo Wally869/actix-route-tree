@@ -12,20 +12,18 @@ pub async fn get_tests() -> impl Responder {
     HttpResponse::Ok().finish()
 }
 
-pub struct RouteBuilder {   
+pub struct RouteBuilder {
     // (path, route)
     routes: Vec<(String, Route)>,
 }
 
 impl RouteBuilder {
     pub fn new() -> Self {
-        RouteBuilder {
-            routes: Vec::new(),
-        }
+        RouteBuilder { routes: Vec::new() }
     }
 
-    pub fn get<F, Args>(mut self, path: &str, handler: F) -> Self 
-    where 
+    pub fn get<F, Args>(mut self, path: &str, handler: F) -> Self
+    where
         F: Handler<Args> + 'static,
         Args: FromRequest + 'static,
         F::Output: Responder + 'static,
@@ -35,8 +33,8 @@ impl RouteBuilder {
         self
     }
 
-    pub fn post<F, Args>(mut self, path: &str, handler: F) -> Self 
-    where 
+    pub fn post<F, Args>(mut self, path: &str, handler: F) -> Self
+    where
         F: Handler<Args> + 'static,
         Args: FromRequest + 'static,
         F::Output: Responder + 'static,
@@ -46,11 +44,44 @@ impl RouteBuilder {
         self
     }
 
+    pub fn patch<F, Args>(mut self, path: &str, handler: F) -> Self
+    where
+        F: Handler<Args> + 'static,
+        Args: FromRequest + 'static,
+        F::Output: Responder + 'static,
+    {
+        let route = web::patch().to(handler);
+        self.routes.push((path.to_string(), route));
+        self
+    }
+
+    pub fn delete<F, Args>(mut self, path: &str, handler: F) -> Self
+    where
+        F: Handler<Args> + 'static,
+        Args: FromRequest + 'static,
+        F::Output: Responder + 'static,
+    {
+        let route = web::delete().to(handler);
+        self.routes.push((path.to_string(), route));
+        self
+    }
+
+    pub fn put<F, Args>(mut self, path: &str, handler: F) -> Self
+    where
+        F: Handler<Args> + 'static,
+        Args: FromRequest + 'static,
+        F::Output: Responder + 'static,
+    {
+        let route = web::put().to(handler);
+        self.routes.push((path.to_string(), route));
+        self
+    }
+
     pub fn sort(&mut self) {
         self.routes.sort_by(|a, b| {
             let static_count_a = a.0.split('/').filter(|s| !s.starts_with('{')).count();
             let static_count_b = b.0.split('/').filter(|s| !s.starts_with('{')).count();
-            
+
             // More static segments = higher priority (comes first)
             static_count_b.cmp(&static_count_a)
         });
@@ -61,7 +92,7 @@ impl RouteBuilder {
         self.routes.sort_by(|a, b| {
             let static_count_a = a.0.split('/').filter(|s| !s.starts_with('{')).count();
             let static_count_b = b.0.split('/').filter(|s| !s.starts_with('{')).count();
-            
+
             // More static segments = higher priority (comes first)
             static_count_b.cmp(&static_count_a)
         });
@@ -75,10 +106,8 @@ impl RouteBuilder {
 
 fn configure_routes(cfg: &mut ServiceConfig) {
     RouteBuilder::new()
-        .get("/test/{id}", get_agent_capabilities)    // Will be ordered after static routes
-        .get("/test/search", get_tests)               // Will be ordered first (static)
-        .get("/test", get_tests)                      // Will be ordered second (static, shorter)
-        .sort_and_flush(cfg);                         // Magic happens here!
+        .get("/test/{id}", get_agent_capabilities) // Will be ordered after static routes
+        .get("/test/search", get_tests) // Will be ordered first (static)
+        .get("/test", get_tests) // Will be ordered second (static, shorter)
+        .sort_and_flush(cfg); // Magic happens here!
 }
-
-
